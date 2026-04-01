@@ -1,0 +1,77 @@
+.upload-section {
+    padding: 100px 0;
+    background: linear-gradient(135deg, rgba(42, 157, 143, 0.05) 0%, rgba(233, 196, 106, 0.05) 100%);
+}
+
+.upload-container {
+    max-width: 800px;
+    margin: 0 auto;
+    text-align: center;
+    background-color: white;
+    padding: 60px;
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-md);
+}
+
+.upload-container h2 {
+    font-size: 2.5rem;
+    margin-bottom: 10
+}
+
+.upload-subtitle {
+    margin-bottom: 40px;
+    color: var(--text-light);
+}
+
+.drop-zone {
+    border: 3px dashed var(--primary-color);
+    border-radius: var(--border-radius-md);
+    padding: 60px;
+    background-color: rgba(42, 157, 143, 0.03);
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.drop-zone:hover,
+.drop-zone.dragover {
+    background-color: rgba(42, 157, 143, 0.1);
+    border-color: var(--primary-dark);
+}
+
+.upload-icon {
+    font-size: 4rem;
+    color: var(--primary-color);
+    margin-bottom: 20px;
+}
+
+.drop-zone p {
+    font-size: 1.2rem;
+    margin-bottom: 20px;
+    font-weight: 500;
+}
+
+.or-divider {
+    display: block;
+    margin: 20px 0;
+    font-size: 0.9rem;
+    color: var(--text-light);
+    position: relative;
+}
+
+.or-divider::before,
+.or-divider::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    width: 40%;
+    height: 1px;
+    background-color: var(--border-color);
+}
+
+.or-divider::before {
+    left: 0;
+}
+
+.or-divider::after {
+    right: 0;
+}

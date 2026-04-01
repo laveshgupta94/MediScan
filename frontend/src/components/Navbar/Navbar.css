@@ -1,0 +1,45 @@
+.navbar {
+    height: var(--header-height);
+    background-color: rgba(253, 251, 247, 0.95);
+    backdrop-filter: blur(10px);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.nav-container {
+    height: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.logo {
+    font-family: var(--font-heading);
+    font-size: 1.8rem;
+    font-weight: 800;
+    color: var(--secondary-color);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.logo-icon {
+    color: var(--primary-color);
+}
+
+.nav-links {
+    display: flex;
+    align-items: center;
+    gap: 40px;
+}
+
+.nav-links a:not(.btn-primary) {
+    font-weight: bolder;
+    color: var(--secondary-color);
+}
+
+.nav-links a:not(.btn-primary):hover {
+    color: var(--primary-color);
+}
