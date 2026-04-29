@@ -6,7 +6,7 @@ from groq import Groq
 
 load_dotenv()
 
-client = Groq(api_key=os.getenv("GROQ_API_KEY") or os.getenv("GROK_API_KEY"))
+client = Groq(api_key=os.getenv("GROK_API_KEY"))
 
 SCAN_PROMPT = """
 You are a knowledgeable medical information assistant. Carefully analyze this medicine image (could be a medicine strip, bottle, box, or prescription) and extract all visible information.

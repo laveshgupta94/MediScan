@@ -4,7 +4,7 @@ from groq import Groq
 
 load_dotenv()
 
-client = Groq(api_key=os.getenv("GROQ_API_KEY") or os.getenv("GROK_API_KEY"))
+client = Groq(api_key=os.getenv("GROK_API_KEY"))
 
 SYSTEM_PROMPT = """You are MediBot, a helpful and responsible medical information assistant for the MediScan app.
 
