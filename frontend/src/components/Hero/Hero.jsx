@@ -5,7 +5,7 @@ const Hero =() =>{
         <div className="container hero-container">
             <div className="hero-content">
                 <h1>Scan. Learn.<span className="highlight">Care.</span></h1>
-                <p>Get Detailed Infromation of Medicine </p>
+                <p>Get Detailed Information of Medicine</p>
                 <div className="hero-btns">
                     <a href="#upload" className="btn-primary">Start Scanning</a>
                     <a href="#how-it-works" className="btn-secondary">

@@ -18,7 +18,7 @@ const Feature =()=>{
                     <li>
                         <i className="fa-solid fa-check-circle"></i>
                         <div>
-                            <strong>safety First</strong>
+                            <strong>Safety First</strong>
                             <p>Check for drug interactions and contraindications.</p>
                         </div>
                     </li>
