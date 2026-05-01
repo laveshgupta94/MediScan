@@ -1,71 +1,96 @@
 .features {
     padding: 100px 0;
+    position: relative;
 }
 
 .features .container {
-    display: flex;
-    align-items: center;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
     gap: 80px;
-}
-
-.feature-content {
-    flex: 1;
+    align-items: center;
 }
 
 .feature-content h2 {
     font-size: 2.5rem;
     margin-bottom: 40px;
+    background: linear-gradient(to right, #fff, #94a3b8);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.feature-list {
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
 }
 
 .feature-list li {
     display: flex;
     gap: 20px;
-    margin-bottom: 30px;
+    align-items: flex-start;
 }
 
 .feature-list i {
     font-size: 1.5rem;
-    color: var(--accent-color);
-    margin-top: 5px;
+    color: var(--primary);
+    margin-top: 4px;
 }
 
 .feature-list strong {
     display: block;
     font-size: 1.2rem;
-    margin-bottom: 5px;
-    color: var(--secondary-color);
+    color: #fff;
+    margin-bottom: 4px;
 }
 
 .feature-list p {
-    color: var(--text-light);
+    color: var(--text-muted);
 }
 
 .feature-image {
-    flex: 1;
     display: flex;
     justify-content: center;
 }
 
 .feature-card-visual {
-    width: 400px;
-    height: 400px;
-    background-color: var(--secondary-color);
+    width: 300px;
+    height: 300px;
+    background: var(--glass);
     border-radius: 40px;
+    border: 1px solid var(--glass-border);
     display: flex;
-    justify-content: center;
     align-items: center;
-    color: white;
-    font-size: 8rem;
-    transform: rotate(-10deg);
-    box-shadow: var(--shadow-lg);
+    justify-content: center;
     position: relative;
+    box-shadow: var(--shadow-premium);
+}
+
+.big-icon {
+    font-size: 8rem;
+    color: var(--primary);
+    filter: drop-shadow(0 0 20px var(--primary-glow));
 }
 
 .feature-card-visual::before {
     content: '';
     position: absolute;
-    width: 90%;
-    height: 90%;
-    border: 3px solid rgba(255, 255, 255, 0.1);
-    border-radius: 30px;
+    inset: -20px;
+    background: radial-gradient(circle, var(--primary-glow) 0%, transparent 70%);
+    z-index: -1;
+}
+
+@media (max-width: 992px) {
+    .features .container {
+        grid-template-columns: 1fr;
+        text-align: center;
+    }
+
+    .feature-list li {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .feature-image {
+        display: none;
+    }
 }

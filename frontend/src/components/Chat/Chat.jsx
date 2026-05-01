@@ -1,15 +1,14 @@
 import React, { useState, useRef, useEffect } from "react";
 import "./Chat.css";
 
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8000";
+// Match the backend port from .env (5001)
+const API_BASE = (import.meta.env.VITE_API_URL || "http://localhost:5001").replace(/\/api$/, "");
 
 const Chat = ({ medicineContext }) => {
   const [messages, setMessages] = useState([
     {
       role: "bot",
-      text: medicineContext?.medicine_name
-        ? `Hi! I'm **MediBot** 🤖. I can see you've scanned **${medicineContext.medicine_name}**. Feel free to ask me anything about it — uses, side effects, dosage, or any other health questions!`
-        : "Hi! I'm **MediBot** 🤖 — your AI health assistant. Scan a medicine above and I'll help answer any questions you have about it!",
+      text: "Hi! I'm **MediBot** 🤖 — your AI health assistant. Scan a medicine and I'll help answer any questions you have about it!",
     },
   ]);
   const [input, setInput] = useState("");
@@ -22,17 +21,17 @@ const Chat = ({ medicineContext }) => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Reset chat when medicine context changes
+  // Reset chat or add context when medicine context changes
   useEffect(() => {
-    setSessionId(null);
-    setMessages([
-      {
-        role: "bot",
-        text: medicineContext?.medicine_name
-          ? `Hi! I'm **MediBot** 🤖. I can see you've scanned **${medicineContext.medicine_name}**. Ask me anything about it!`
-          : "Hi! I'm **MediBot** 🤖 — your AI health assistant. Scan a medicine above and I'll help answer any questions!",
-      },
-    ]);
+    if (medicineContext?.medicine_name) {
+      setSessionId(null); // Reset session for new medicine
+      setMessages([
+        {
+          role: "bot",
+          text: `I've analyzed the information for **${medicineContext.medicine_name}**. Ask me anything about its uses, dosage, or side effects!`,
+        },
+      ]);
+    }
   }, [medicineContext]);
 
   const sendMessage = async () => {
@@ -56,7 +55,7 @@ const Chat = ({ medicineContext }) => {
 
       const data = await response.json();
 
-      if (!response.ok) throw new Error(data.detail || "Chat error");
+      if (!response.ok) throw new Error(data.detail || "Chat service unavailable.");
 
       if (!sessionId) setSessionId(data.session_id);
 
@@ -65,17 +64,18 @@ const Chat = ({ medicineContext }) => {
         { role: "bot", text: data.reply },
       ]);
     } catch (err) {
+      console.error("Chat Error:", err);
       setMessages((prev) => [
         ...prev,
         {
           role: "bot",
-          text: "Sorry, I'm having trouble connecting right now. Please try again in a moment.",
+          text: "I'm having trouble connecting to my brain right now. Please check if the backend is running and try again.",
           isError: true,
         },
       ]);
     } finally {
       setLoading(false);
-      inputRef.current?.focus();
+      setTimeout(() => inputRef.current?.focus(), 100);
     }
   };
 
@@ -86,35 +86,53 @@ const Chat = ({ medicineContext }) => {
     }
   };
 
-  // Render bold markdown **text**
+  // Render bold markdown **text** and bullet points
   const renderText = (text) => {
-    const parts = text.split(/\*\*(.*?)\*\*/g);
-    return parts.map((part, i) =>
-      i % 2 === 1 ? <strong key={i}>{part}</strong> : part
-    );
+    if (!text) return "";
+    
+    // Split by bullet points first
+    const lines = text.split('\n');
+    return lines.map((line, li) => {
+      const isBullet = line.trim().startsWith('- ') || line.trim().startsWith('* ');
+      const content = isBullet ? line.trim().substring(2) : line;
+      
+      const parts = content.split(/\*\*(.*?)\*\*/g);
+      const renderedContent = parts.map((part, i) =>
+        i % 2 === 1 ? <strong key={i}>{part}</strong> : part
+      );
+
+      return (
+        <div key={li} className={isBullet ? "bullet-line" : "text-line"}>
+          {isBullet && <span className="bullet-dot">•</span>}
+          {renderedContent}
+        </div>
+      );
+    });
   };
 
   return (
-    <section id="chat" className="chat-section">
-      <div className="container">
+    <div id="chat" className="chat-wrapper-container">
         <div className="chat-wrapper">
           <div className="chat-header">
             <div className="chat-avatar">
               <i className="fa-solid fa-robot"></i>
             </div>
             <div>
-              <h2>MediBot — AI Health Assistant</h2>
-              <p>Ask questions about your medicine or general health topics</p>
+              <h2>MediBot Assistant</h2>
+              <p>AI-powered medical guidance</p>
             </div>
-            <span className="online-badge">● Online</span>
+            <div className="status-container">
+              <span className="online-dot"></span>
+              <span className="status-text">Active</span>
+            </div>
           </div>
 
-          <div className="chat-messages" id="chat-messages">
+          <div className="chat-messages">
             {messages.map((msg, i) => (
               <div key={i} className={`message ${msg.role} ${msg.isError ? "error-msg" : ""}`}>
                 {msg.role === "bot" && (
                   <div className="bot-avatar">
-                    <i className="fa-solid fa-robot"></i>
+                    <i className="fa-solid fa-user-shield"></i>
                   </div>
                 )}
                 <div className="message-bubble">
@@ -126,7 +144,7 @@ const Chat = ({ medicineContext }) => {
             {loading && (
               <div className="message bot">
                 <div className="bot-avatar">
-                  <i className="fa-solid fa-robot"></i>
+                  <i className="fa-solid fa-user-shield"></i>
                 </div>
                 <div className="message-bubble typing">
                   <span></span>
@@ -142,29 +160,27 @@ const Chat = ({ medicineContext }) => {
             <textarea
               ref={inputRef}
               className="chat-input"
-              placeholder="Ask about this medicine, side effects, dosage..."
+              placeholder="Ask anything about medicines..."
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
               rows={1}
-              id="chat-input"
             />
             <button
               className="send-btn"
               onClick={sendMessage}
               disabled={!input.trim() || loading}
               aria-label="Send message"
-              id="send-btn"
             >
               <i className="fa-solid fa-paper-plane"></i>
             </button>
           </div>
-          <p className="chat-disclaimer">
-            <i className="fa-solid fa-circle-info"></i> MediBot provides general information only. Always consult a healthcare professional.
-          </p>
+          <div className="chat-footer-note">
+             <i className="fa-solid fa-shield-halved"></i>
+             <span>MediBot provides educational info only.</span>
+          </div>
         </div>
-      </div>
-    </section>
+    </div>
   );
 };
 

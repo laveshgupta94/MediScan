@@ -1,46 +1,64 @@
 import base64
 import json
 import os
+import re
 from dotenv import load_dotenv
 from groq import Groq
 
 load_dotenv()
 
-client = Groq(api_key=os.getenv("GROQ_API_KEY") or os.getenv("GROK_API_KEY"))
+# Initialize Groq client
+api_key = os.getenv("GROQ_API_KEY") or os.getenv("GROK_API_KEY")
+client = Groq(api_key=api_key)
 
 SCAN_PROMPT = """
-You are a knowledgeable medical information assistant. Carefully analyze this medicine image (could be a medicine strip, bottle, box, or prescription) and extract all visible information.
+You are a highly accurate medical information assistant. Analyze this medicine image (medicine strip, bottle, box, or prescription) and extract all details.
 
-Return ONLY a valid JSON object with this exact structure (no markdown, no extra text):
+Return ONLY a valid JSON object. Do not include any conversational text or markdown blocks.
+Required JSON structure:
 {
-  "medicine_name": "Full brand name of the medicine",
-  "generic_name": "Generic/chemical name if identifiable",
-  "manufacturer": "Manufacturer name if visible",
-  "description": "Short description of what this medicine is",
-  "uses": ["Primary use 1", "Use 2", "Use 3"],
-  "dosage": "Typical dosage information",
-  "side_effects": ["Side effect 1", "Side effect 2", "Side effect 3"],
-  "warnings": ["Warning 1", "Warning 2"],
-  "interactions": ["Drug interaction 1", "Drug interaction 2"],
+  "medicine_name": "Full brand name",
+  "generic_name": "Generic/chemical name",
+  "manufacturer": "Manufacturer name",
+  "description": "Short description of the medicine",
+  "uses": ["use1", "use2"],
+  "dosage": "Typical dosage",
+  "side_effects": ["effect1", "effect2"],
+  "warnings": ["warning1", "warning2"],
+  "interactions": ["interaction1", "interaction2"],
   "storage": "Storage instructions",
   "confidence": "high/medium/low"
 }
 
-If you cannot identify specific information from the image, use null for that field.
-If the image is not a medicine, set medicine_name to null and add an "error" field explaining what was seen.
-Be accurate, responsible, and always recommend consulting a healthcare professional.
+If you cannot identify a field, use null.
+If the image is not medicine-related, set medicine_name to null and add an "error" field.
 """
+
+
+def extract_json(text: str) -> str:
+    """Extract JSON object from text using regex to handle potential chatter or markdown."""
+    # Try to find content between first { and last }
+    match = re.search(r'(\{.*\})', text, re.DOTALL)
+    if match:
+        return match.group(1)
+    return text
 
 
 async def scan_medicine(image_bytes: bytes, content_type: str) -> dict:
     """
     Send a medicine image to Groq Vision and return structured medicine info.
     """
+    if not api_key:
+        return {"success": False, "error": "Groq API Key not configured.", "data": None}
+
     try:
         base64_image = base64.b64encode(image_bytes).decode("utf-8")
         
+        # Use standard Groq vision model
+        model_name = os.getenv("GROQ_MODEL", "llama-3.2-11b-vision-preview")
         response = client.chat.completions.create(
-            model="meta-llama/llama-4-scout-17b-16e-instruct",
+            model=model_name,
+
             messages=[
                 {
                     "role": "user",
@@ -53,27 +71,30 @@ async def scan_medicine(image_bytes: bytes, content_type: str) -> dict:
                     ]
                 }
             ],
-            response_format={"type": "json_object"}
+            temperature=0.1  # Lower temperature for more deterministic JSON
         )
 
+
         raw_text = response.choices[0].message.content.strip()
+        json_text = extract_json(raw_text)
 
-        if raw_text.startswith("```"):
-            raw_text = raw_text.split("```")[1]
-            if raw_text.startswith("json"):
-                raw_text = raw_text[4:]
-            raw_text = raw_text.strip()
+        result = json.loads(json_text)
+        
+        # Check if the AI flagged an error
+        if result.get("medicine_name") is None and result.get("error"):
+            return {"success": False, "error": result["error"], "data": None}
 
-        result = json.loads(raw_text)
         return {"success": True, "data": result}
 
-    except json.JSONDecodeError:
+    except json.JSONDecodeError as e:
+        print(f"JSON Parse Error: {str(e)} | Raw: {raw_text}")
         return {
             "success": False,
-            "error": "Could not parse medicine information. Please try a clearer image.",
+            "error": "Failed to parse medicine data. The image might be unclear.",
             "data": None,
         }
     except Exception as e:
+        print(f"Scanner Exception: {str(e)}")
         return {
             "success": False,
             "error": f"Scan failed: {str(e)}",

@@ -1,2 +1,0 @@
-frontend files are to be made hare 
-add all the .env pass here 

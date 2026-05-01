@@ -1,18 +1,22 @@
-import React from "react";
+import { Link } from "react-router-dom";
 import "./Hero.css";
 const Hero =() =>{
     return(<header className="hero">  
         <div className="container hero-container">
             <div className="hero-content">
-                <h1>Scan. Learn.<span className="highlight">Care.</span></h1>
-                <p>Get Detailed Information of Medicine</p>
+                <div className="badge">AI-Powered Healthcare</div>
+                <h1>Scan. Learn. <span className="highlight">Care.</span></h1>
+                <p>Identify your medications instantly and understand their uses, side effects, and more with our advanced AI scanner.</p>
                 <div className="hero-btns">
-                    <a href="#upload" className="btn-primary">Start Scanning</a>
+                    <Link to="/analyze" className="btn-primary">
+                        <i className="fa-solid fa-camera"></i> Start Scanning
+                    </Link>
                     <a href="#how-it-works" className="btn-secondary">
                         Learn More
                     </a>
                 </div>
             </div>
+
             <div className="hero-image">
                 <div className="scan-visual">
                     <div className="phone-frame">
