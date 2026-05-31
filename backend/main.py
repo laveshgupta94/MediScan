@@ -28,21 +28,22 @@ app = FastAPI(
     version="1.1.0",
 )
 
+# Global exception handler to ensure CORS on errors
+from fastapi.responses import JSONResponse
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    logger.error(f"Global error: {exc}", exc_info=True)
+    return JSONResponse(
+        status_code=500,
+        content={"detail": f"Internal Server Error: {str(exc)}"},
+        headers={"Access-Control-Allow-Origin": "*"}
+    )
+
 # CORS configuration
-allowed_origins = [
-    "http://localhost:5173",
-    "http://localhost:5174",
-    "http://localhost:3000",
-    "http://127.0.0.1:5173",
-    "http://127.0.0.1:5174",
-    os.getenv("FRONTEND_URL", "http://localhost:5173"),
-]
-
-
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=allowed_origins,
-    allow_credentials=True,
+    allow_origins=["*"],  # For development, allow all origins
+    allow_credentials=False, # Must be False if allow_origins is ["*"]
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -93,53 +94,61 @@ async def get_optional_user(token: str = Depends(oauth2_scheme)):
 
 @app.post("/api/auth/register", response_model=UserResponse)
 async def register(user_in: UserCreate):
-    # Check if user already exists
-    existing_user = await db.users.find_one({"email": user_in.email})
-    if existing_user:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email already registered"
-        )
-    
-    # Create new user
-    hashed_password = get_password_hash(user_in.password)
-    user_dict = user_in.dict()
-    user_dict.pop("password")
-    user_dict["hashed_password"] = hashed_password
-    user_dict["created_at"] = datetime.utcnow()
-    
+    logger.info(f"Registration attempt for email: {user_in.email}")
     try:
+        # Check if user already exists
+        existing_user = await db.users.find_one({"email": user_in.email})
+        if existing_user:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Email already registered"
+            )
+        
+        # Create new user
+        hashed_password = get_password_hash(user_in.password)
+        user_dict = user_in.dict()
+        user_dict.pop("password")
+        user_dict["hashed_password"] = hashed_password
+        user_dict["created_at"] = datetime.utcnow()
+        
         result = await db.users.insert_one(user_dict)
+        
+        # Return user data
+        created_user = await db.users.find_one({"_id": result.inserted_id})
+        
+        return UserResponse(
+            id=str(created_user["_id"]),
+            email=created_user["email"],
+            full_name=created_user["full_name"],
+            created_at=created_user["created_at"]
+        )
     except Exception as e:
-        logger.error(f"Failed to insert user: {e}")
-        raise HTTPException(status_code=500, detail="Database insertion failed")
-    
-    # Return user data
-    created_user = await db.users.find_one({"_id": result.inserted_id})
-    if not created_user:
-        raise HTTPException(status_code=500, detail="User not found after creation")
-
-    return UserResponse(
-        id=str(created_user["_id"]),
-        email=created_user["email"],
-        full_name=created_user["full_name"],
-        created_at=created_user["created_at"]
-    )
+        logger.error(f"Registration error: {e}")
+        if isinstance(e, HTTPException):
+            raise e
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
 
 
 
 @app.post("/api/auth/login", response_model=Token)
 async def login(user_in: UserLogin):
-    user = await db.users.find_one({"email": user_in.email})
-    if not user or not verify_password(user_in.password, user["hashed_password"]):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect email or password",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    
-    access_token = create_access_token(data={"sub": user["email"]})
-    return {"access_token": access_token, "token_type": "bearer"}
+    logger.info(f"Login attempt for email: {user_in.email}")
+    try:
+        user = await db.users.find_one({"email": user_in.email})
+        if not user or not verify_password(user_in.password, user["hashed_password"]):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Incorrect email or password",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        
+        access_token = create_access_token(data={"sub": user["email"]})
+        return {"access_token": access_token, "token_type": "bearer"}
+    except Exception as e:
+        logger.error(f"Login error: {e}")
+        if isinstance(e, HTTPException):
+            raise e
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
 
 @app.get("/api/auth/me", response_model=UserResponse)
 async def get_me(current_user: dict = Depends(get_current_user)):
@@ -163,9 +172,12 @@ async def get_history(current_user: dict = Depends(get_current_user)):
 
 @app.get("/")
 async def root():
+    from database import test_connection
+    db_status = await test_connection()
     return {
         "message": "MediScan API is running 🚀",
         "status": "healthy",
+        "database": "connected" if db_status else "disconnected",
         "docs": "/docs"
     }
 

@@ -7,10 +7,9 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# Secret key to sign JWT tokens
 SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key-for-development-only")
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24  # 1 day
+ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 
 
 import bcrypt
 

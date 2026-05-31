@@ -25,7 +25,9 @@ def init_db():
         client = AsyncIOMotorClient("mongodb://localhost:27017", serverSelectionTimeoutMS=2000)
     else:
         try:
-            client = AsyncIOMotorClient(MONGODB_URL)
+            # Add timeout to prevent hanging
+            client = AsyncIOMotorClient(MONGODB_URL, serverSelectionTimeoutMS=5000)
+            logger.info("MongoDB client initialized")
         except Exception as e:
             logger.error(f"Failed to initialize MongoDB client: {e}")
             client = AsyncIOMotorClient("mongodb://localhost:27017", serverSelectionTimeoutMS=2000)
